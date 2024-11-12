@@ -1,5 +1,6 @@
 # 🛠️ o1-engineer
 
+This project is forked from [Doriandarko's o1-engineer](https://github.com/Doriandarko/o1-engineer). Special thanks to Doriandarko for setting up this project.
 ![Updated Features](https://img.shields.io/badge/Features-Updated-brightgreen)
 
 A command-line tool designed to assist developers in managing and interacting with their projects efficiently. Leveraging the power of OpenAI's API, o1-engineer provides functionalities such as code generation, file editing, project planning, and code review to streamline your development workflow.
