@@ -1,4 +1,6 @@
- openai                                                                      
+ openai
+ ollama
+ anthropic                                                                      
  termcolor                                                                   
  prompt_toolkit                                                              
  rich

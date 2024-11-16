@@ -77,11 +77,7 @@ Added Grok Engineer to the repo. Make sure you add your XAI_API_KEY in your .env
 
 4. **Configure APIs**:
 
-   Add your API key at the top of the script
-
-   ```
-   client = OpenAI(api_key="YOUR API")
-   ```
+   Add your API key in .env file using .env.template
 
 ## 📚 Usage
 
