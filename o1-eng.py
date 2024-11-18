@@ -368,16 +368,6 @@ async def apply_creation_steps(creation_response, added_files, retry_count=0):
             if info_match:
                 item_type, path = info_match.groups()
 
-                if not os.path.exists(path):
-                    logging.error(f"Path does not exist: {path}")
-                    print(colored(f"Path not found: {path}", "red"))
-                    continue
-
-                if not os.access(path, os.W_OK):
-                    logging.error(f"No write permission for: {path}")
-                    print(colored(f"Cannot write to file/directory: {path}", "red"))
-                    continue
-
                 if item_type == "FOLDER":
                     os.makedirs(path, exist_ok=True)
                     logging.info(f"Folder created: {path}")
@@ -701,7 +691,7 @@ Files to modify:
             creation_instruction = user_input[7:].strip()
             if not creation_instruction:
                 logging.warning("User issued /create without instructions.")
-                continue
+                return
 
             create_request = (
                 f"{CREATE_SYSTEM_PROMPT}\n\nUser request: {creation_instruction}"
