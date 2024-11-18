@@ -22,8 +22,6 @@ from model_manager import (
     ModelManager,
     ModelError,
     ModelConfigurationError,
-    ModelAPIError,
-    ModelNotFoundError,
 )
 
 
@@ -34,6 +32,15 @@ try:
 except (ModelConfigurationError, ModelError) as e:
     print(colored(f"Error initializing model: {e}", "red"))
     sys.exit(1)
+
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s - %(levelname)s - %(message)s",
+    handlers=[
+        logging.StreamHandler(sys.stdout),  # Pour afficher en console
+        logging.FileHandler("o1_engineer.log"),  # Pour sauvegarder dans un fichier
+    ],
+)
 
 
 CREATE_SYSTEM_PROMPT = """You are an advanced o1 engineer designed to create files and folders based on user instructions. Your primary objective is to generate the content of the files to be created as code blocks. Each code block should specify whether it's a file or folder, along with its path.
@@ -509,7 +516,7 @@ async def chat_with_ai(
             logging.info("Sending general query to AI.")
 
         response = await model_manager.chat_completion(messages=messages)
-        print(f"AI response: {response}")
+        print(f"AI response: {response} using {model_manager.full_model_name}")
         logging.info("Received response from AI.")
         last_ai_response = response["content"]
 
