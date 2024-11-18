@@ -27,7 +27,6 @@ from model_manager import (
 )
 
 
-MODEL = "anthropic/claude-3-5-sonnet-latest"
 load_dotenv()
 
 try:

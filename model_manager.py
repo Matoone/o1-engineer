@@ -42,7 +42,7 @@ class ModelNotFoundError(ModelError):
 
 # Configuration des modèles
 MODEL_CONFIG = {
-    # Anthropic
+    # Anthropic Claude3.5 Sonnet
     "anthropic/claude-3-5-sonnet-latest": {
         "max_tokens": 8192,
         "supports_tools": True,
@@ -50,7 +50,7 @@ MODEL_CONFIG = {
         "requires_api_key": True,
         "env_key": "ANTHROPIC_API_KEY",
     },
-    # Ollama
+    # Ollama Qwen coder 14b
     "ollama/qwen2.5-coder:14b": {
         "max_tokens": 8192,
         "supports_tools": True,
@@ -58,8 +58,8 @@ MODEL_CONFIG = {
         "requires_api_key": False,
         "env_key": None,
     },
-    # OpenAI (existant)
-    "openai/gpt-4": {
+    # OpenAI GPT4o
+    "openai/gpt-4o": {
         "max_tokens": 8192,
         "supports_tools": True,
         "streaming": True,
@@ -134,7 +134,7 @@ class ModelManager:
             elif self.provider == ModelProvider.ANTHROPIC:
                 return AsyncAnthropic(api_key=os.getenv("ANTHROPIC_API_KEY"))
             elif self.provider == ModelProvider.OPENAI:
-                return AsyncOpenAI()
+                return AsyncOpenAI(api_key=os.getenv("OPENAI_API_KEY"))
             else:
                 raise ModelConfigurationError(f"Unsupported provider: {self.provider}")
         except Exception as e:

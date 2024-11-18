@@ -53,14 +53,14 @@ Added Grok Engineer to the repo. Make sure you add your XAI_API_KEY in your .env
 
 - **Python**: Ensure you have Python 3.7 or higher installed. [Download Python](https://www.python.org/downloads/)
 
-- **OpenAI API Key**: Obtain an API key from [OpenAI](https://platform.openai.com/).
+- **OpenAI API Key**: Obtain an API key from [OpenAI](https://platform.openai.com/) or Anthropic (or just use a local model with ollama).
 
 ### 🔧 Steps
 
 1. **Clone the Repository**:
 
    ```bash
-   git clone https://github.com/doriandarko/o1-engineer.git
+   git clone git@github.com:Matoone/o1-engineer.git
    ```
 
 2. **Navigate to the Project Directory**:
@@ -77,7 +77,8 @@ Added Grok Engineer to the repo. Make sure you add your XAI_API_KEY in your .env
 
 4. **Configure APIs**:
 
-   Add your API key in .env file using .env.template
+   Add your API key(s) in .env file using .env.template.
+   You might need to adjust MODEL_CONFIG in model_manager to use a different model.
 
 ## 📚 Usage
 
