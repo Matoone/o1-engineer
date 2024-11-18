@@ -22,8 +22,6 @@ from model_manager import (
     ModelManager,
     ModelError,
     ModelConfigurationError,
-    ModelAPIError,
-    ModelNotFoundError,
 )
 
 
@@ -34,6 +32,15 @@ try:
 except (ModelConfigurationError, ModelError) as e:
     print(colored(f"Error initializing model: {e}", "red"))
     sys.exit(1)
+
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s - %(levelname)s - %(message)s",
+    handlers=[
+        logging.StreamHandler(sys.stdout),  # Pour afficher en console
+        logging.FileHandler("o1_engineer.log"),  # Pour sauvegarder dans un fichier
+    ],
+)
 
 
 CREATE_SYSTEM_PROMPT = """You are an advanced o1 engineer designed to create files and folders based on user instructions. Your primary objective is to generate the content of the files to be created as code blocks. Each code block should specify whether it's a file or folder, along with its path.
@@ -503,14 +510,13 @@ async def chat_with_ai(
 
         if is_edit_request and retry_count == 0:
             print(colored("Analyzing files and generating modifications...", "magenta"))
-            logging.info("Sending edit request to AI.")
+            logging.info(f"Sending edit request to AI {model_manager.full_model_name}.")
         elif not is_edit_request:
             print(colored("o1 engineer is thinking...", "magenta"))
-            logging.info("Sending general query to AI.")
+            logging.info(f"Sending general query to AI {model_manager.full_model_name}")
 
         response = await model_manager.chat_completion(messages=messages)
-        print(f"AI response: {response}")
-        logging.info("Received response from AI.")
+        logging.info(f"Received response from AI {model_manager.full_model_name}")
         last_ai_response = response["content"]
 
         if not is_edit_request:
@@ -522,9 +528,16 @@ async def chat_with_ai(
 
         return last_ai_response
     except Exception as e:
-        print(colored(f"Error while communicating with OpenAI: {e}", "red"))
+        print(
+            colored(
+                f"Error while communicating with AI {model_manager.full_model_name}: {e}",
+                "red",
+            )
+        )
         print(colored(traceback.format_exc(), "red"))
-        logging.error(f"Error while communicating with OpenAI: {e}")
+        logging.error(
+            f"Error while communicating with AI {model_manager.full_model_name}: {e}"
+        )
         return None
 
 
