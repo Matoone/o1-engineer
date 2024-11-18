@@ -25,7 +25,8 @@ from model_manager import (
     ModelConfigurationError,
 )
 
-MAX_FILE_SIZE = 5 * 1024 * 1024  # 5MB file size limit
+MAX_FILE_SIZE = 200 * 1024  # 200 KB file size limit
+MAX_TOTAL_SIZE = MAX_FILE_SIZE * 3  # 600 KB total size limit
 
 load_dotenv()
 
@@ -262,7 +263,9 @@ def add_file_to_context(file_path, added_files, action="to the chat context"):
 
         file_size = os.path.getsize(file_path)
         if file_size > MAX_FILE_SIZE:
-            logging.error(f"File {file_path} exceeds maximum size limit of {MAX_FILE_SIZE/1024/1024:.1f}MB")
+            logging.error(
+                f"File {file_path} exceeds maximum size limit of {MAX_FILE_SIZE/1024:.1f}MB"
+            )
             return
 
         try:
@@ -505,7 +508,9 @@ async def chat_with_ai(
 
         return last_ai_response
     except Exception as e:
-        logging.error(f"Error while communicating with AI {model_manager.full_model_name}: {e}")
+        logging.error(
+            f"Error while communicating with AI {model_manager.full_model_name}: {e}"
+        )
         logging.error(traceback.format_exc())
         return None
 
@@ -613,11 +618,18 @@ async def main():
                             add_file_to_context(file_path, added_files)
                 else:
                     logging.error(f"{path} is neither a file nor a directory.")
-                
+
             total_size = sum(len(content) for content in added_files.values())
-            if total_size > 3 * MAX_FILE_SIZE:
-                logging.error("Total size of all files exceeds maximum allowed limit")
-                print(colored("Total size of files is too large. Please reduce the number/size of files.", "red"))
+            if total_size > MAX_TOTAL_SIZE:
+                logging.error(
+                    f"Total size of all files exceeds maximum allowed limit of {MAX_TOTAL_SIZE/1024:.1f}KB"
+                )
+                print(
+                    colored(
+                        "Total size of files is too large. Please reduce the number/size of files.",
+                        "red",
+                    )
+                )
                 added_files.clear()
                 break
 
@@ -803,7 +815,9 @@ Files to modify:
                 logging.error("AI failed to generate a planning response.")
 
         else:
-            ai_response = await chat_with_ai(user_message=user_input, added_files=added_files)
+            ai_response = await chat_with_ai(
+                user_message=user_input, added_files=added_files
+            )
             if ai_response:
                 print()
                 print(colored("o1 engineer:", "blue"))
