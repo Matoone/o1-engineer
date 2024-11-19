@@ -1,9 +1,8 @@
 # model_manager.py
-from typing import Dict, List, Optional, Tuple, Any, Union, cast
+from logger import logger
+from typing import Dict, List, Optional, Tuple, Any, TypedDict, Union, cast
 import os
-import logging
 from enum import Enum
-import json
 from anthropic import AsyncAnthropic
 import ollama
 from openai import OpenAI, AsyncOpenAI
@@ -14,6 +13,14 @@ class ModelProvider(Enum):
     OPENAI = "openai"
     ANTHROPIC = "anthropic"
     OLLAMA = "ollama"
+
+
+class ModelConfig(TypedDict):
+    max_tokens: int
+    supports_tools: bool
+    streaming: bool
+    requires_api_key: bool
+    env_key: str | None
 
 
 class ModelError(Exception):
@@ -40,8 +47,29 @@ class ModelNotFoundError(ModelError):
     pass
 
 
+class ToolCall(TypedDict):
+    id: str
+    type: str
+    function: dict  # You might want to make this more specific based on your needs
+
+
+class ChatMessage(TypedDict):
+    content: str
+    tool_calls: List[ToolCall]
+
+
+class TokenUsage(TypedDict):
+    total_tokens: int
+
+
+class ChatResponse(TypedDict):
+    content: str
+    tool_calls: List[ToolCall]
+    usage: TokenUsage
+
+
 # Configuration des modèles
-MODEL_CONFIG = {
+MODEL_CONFIG: dict[str, ModelConfig] = {
     # Anthropic Claude3.5 Sonnet
     "anthropic/claude-3-5-sonnet-latest": {
         "max_tokens": 8192,
@@ -80,16 +108,23 @@ def parse_model_name(self, model_name: str) -> Tuple[ModelProvider, str]:
         raise ModelConfigurationError(f"Invalid model name format: {model_name}")
 
 
-def load_model_config() -> str:
+def load_model_config(model_kind: str) -> str:
     """
     Charge la configuration du modèle depuis les variables d'environnement
     """
     load_dotenv()
-    model = os.getenv("MODEL")
+    model = os.getenv(model_kind)
     if not model:
-        raise ModelConfigurationError("MODEL not found in environment variables")
+        model = os.getenv("DEFAULT_MODEL")
+        logger.warning(
+            f"MODEL kind {model_kind} not found in environment variables. Fallback to Default model."
+        )
+        if not model:
+            raise ModelConfigurationError(
+                f"MODEL kind {model_kind} not found in environment variables. Tried to fallback to Default model but DEFAULT_MODEL env var was not set."
+            )
     if model not in MODEL_CONFIG:
-        raise ModelNotFoundError(f"Model {model} not found in configuration")
+        raise ModelNotFoundError(f"Model kind {model} not found in configuration")
     return model
 
 
@@ -102,7 +137,7 @@ def validate_api_keys(model_name: str) -> None:
         raise ModelNotFoundError(f"Model {model_name} not found in configuration")
 
     if config["requires_api_key"]:
-        api_key = os.getenv(config["env_key"])
+        api_key = os.getenv(config["env_key"])  # type: ignore
         if not api_key:
             raise ModelConfigurationError(
                 f"API key {config['env_key']} required for {model_name} not found in environment variables"
@@ -110,8 +145,8 @@ def validate_api_keys(model_name: str) -> None:
 
 
 class ModelManager:
-    def __init__(self):
-        self.full_model_name = load_model_config()
+    def __init__(self, model_kind: str):
+        self.full_model_name = load_model_config(model_kind)
         self.provider, self.model_name = parse_model_name(self, self.full_model_name)
         self._client: Optional[
             Union[ollama.AsyncClient, AsyncAnthropic, AsyncOpenAI]
@@ -142,7 +177,9 @@ class ModelManager:
                 f"Error initializing client for {self.provider}: {str(e)}"
             )
 
-    async def _ollama_chat(self, messages: List[Dict], tools: Optional[List]) -> Dict:
+    async def _ollama_chat(
+        self, messages: List[Dict], tools: Optional[List]
+    ) -> ChatResponse:
         """Gestion spécifique Ollama avec typage correct"""
         client = cast(ollama.AsyncClient, self.client)
         response = await client.chat(
@@ -156,7 +193,7 @@ class ModelManager:
 
     async def _anthropic_chat(
         self, messages: List[Dict], tools: Optional[List]
-    ) -> Dict:
+    ) -> ChatResponse:
         """Gestion spécifique Anthropic avec typage correct"""
         client = cast(AsyncAnthropic, self.client)
         response = await client.messages.create(
@@ -169,7 +206,9 @@ class ModelManager:
         )
         return self._format_anthropic_response(response)
 
-    async def _openai_chat(self, messages: List[Dict], tools: Optional[List]) -> Dict:
+    async def _openai_chat(
+        self, messages: List[Dict], tools: Optional[List]
+    ) -> ChatResponse:
         """Gestion spécifique OpenAI avec typage correct"""
         client = cast(AsyncOpenAI, self.client)
         response = await client.chat.completions.create(
@@ -183,7 +222,7 @@ class ModelManager:
 
     async def chat_completion(
         self, messages: List[Dict[str, str]], tools: Optional[List] = None
-    ) -> Dict[str, Any]:
+    ) -> ChatResponse:
         """Interface unifiée pour les chat completions"""
         try:
             formatted_messages = self._format_messages(messages)
@@ -212,7 +251,7 @@ class ModelManager:
             ]
         return messages
 
-    def _format_ollama_response(self, response: Any) -> Dict:
+    def _format_ollama_response(self, response: Any) -> ChatResponse:
         """Formate la réponse Ollama"""
         return {
             "content": response.get("message", {}).get("content", ""),
@@ -220,7 +259,7 @@ class ModelManager:
             "usage": {"total_tokens": 0},
         }
 
-    def _format_anthropic_response(self, response: Any) -> Dict:
+    def _format_anthropic_response(self, response: Any) -> ChatResponse:
         """Formate la réponse Anthropic"""
         return {
             "content": response.content[0].text if response.content else "",
@@ -236,7 +275,7 @@ class ModelManager:
             },
         }
 
-    def _format_openai_response(self, response: Any) -> Dict:
+    def _format_openai_response(self, response: Any) -> ChatResponse:
         """Formate la réponse OpenAI"""
         return {
             "content": response.choices[0].message.content,
